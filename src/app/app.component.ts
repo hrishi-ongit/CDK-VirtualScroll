@@ -1,13 +1,12 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+
+import { MaterialTableDemoComponent } from './material-table-demo/material-table-demo.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [MaterialTableDemoComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent {
-  title = 'material-grid-virtual-scroll';
-}
+export class AppComponent {}

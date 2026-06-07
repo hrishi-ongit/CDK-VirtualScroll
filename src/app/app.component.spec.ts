@@ -14,16 +14,10 @@ describe('AppComponent', () => {
     expect(app).toBeTruthy();
   });
 
-  it(`should have the 'material-grid-virtual-scroll' title`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('material-grid-virtual-scroll');
-  });
-
-  it('should render title', () => {
+  it('should render the Material table demo', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, material-grid-virtual-scroll');
+    expect(compiled.querySelector('app-material-table-demo')).not.toBeNull();
   });
 });
