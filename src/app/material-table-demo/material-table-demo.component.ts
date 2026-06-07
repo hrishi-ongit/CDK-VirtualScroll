@@ -1,4 +1,5 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ViewChild, inject } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, Component, DestroyRef, ViewChild, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 
@@ -38,6 +39,7 @@ type WorkItemColumn =
 })
 export class MaterialTableDemoComponent implements AfterViewInit {
   private readonly mockDataService = inject(MockDataService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly dateFormatter = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
   private readonly currencyFormatter = new Intl.NumberFormat('en-US', {
     currency: 'USD',
@@ -68,13 +70,23 @@ export class MaterialTableDemoComponent implements AfterViewInit {
   protected readonly pageSizeOptions: readonly number[] = [10, 25, 50, 100];
   protected readonly dataSource = new MatTableDataSource<WorkItem>(this.mockDataService.generateWorkItems(1000));
   protected readonly totalRecords = this.dataSource.data.length;
+  protected readonly displayedRecordSummary = signal(this.createDisplayedRecordSummary(0, 25));
+  protected readonly totalBudgetUsd = this.dataSource.data.reduce((sum, workItem) => sum + workItem.budgetUsd, 0);
 
   @ViewChild(MatPaginator) private paginator?: MatPaginator;
 
   ngAfterViewInit(): void {
     if (this.paginator) {
       this.dataSource.paginator = this.paginator;
+      this.updateDisplayedRecordSummary();
+      this.paginator.page.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+        this.updateDisplayedRecordSummary();
+      });
     }
+  }
+
+  protected isFrozenColumn(column: WorkItemColumn): boolean {
+    return column === 'workItemKey' || column === 'title';
   }
 
   protected getColumnLabel(column: WorkItemColumn): string {
@@ -114,5 +126,37 @@ export class MaterialTableDemoComponent implements AfterViewInit {
       default:
         return String(workItem[column]);
     }
+  }
+
+  protected getFooterValue(column: WorkItemColumn): string {
+    switch (column) {
+      case 'workItemKey':
+        return this.displayedRecordSummary();
+      case 'title':
+        return 'Totals';
+      case 'budgetUsd':
+        return this.currencyFormatter.format(this.totalBudgetUsd);
+      default:
+        return '';
+    }
+  }
+
+  private updateDisplayedRecordSummary(): void {
+    if (!this.paginator) {
+      return;
+    }
+
+    this.displayedRecordSummary.set(this.createDisplayedRecordSummary(this.paginator.pageIndex, this.paginator.pageSize));
+  }
+
+  private createDisplayedRecordSummary(pageIndex: number, pageSize: number): string {
+    if (this.totalRecords === 0) {
+      return 'Displaying 0 of 0 records';
+    }
+
+    const startRecord = pageIndex * pageSize + 1;
+    const endRecord = Math.min((pageIndex + 1) * pageSize, this.totalRecords);
+
+    return `Displaying ${startRecord}-${endRecord} of ${this.totalRecords} records`;
   }
 }
